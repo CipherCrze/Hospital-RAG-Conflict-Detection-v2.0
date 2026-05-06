@@ -1,0 +1,36 @@
+# Hospital RAG — Conflict Detection Q&A System
+# Python dependencies (compatible with Streamlit Community Cloud / Python 3.14)
+# Install: pip install -r requirements.txt
+#
+# Note: torch is the CPU-only build (~700 MB vs ~2.5 GB for CUDA build)
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Core ML / NLP
+sentence-transformers>=2.7.0
+transformers>=4.41.2
+torch>=2.9.0
+
+# Vector Database
+chromadb>=0.5.3
+
+# LLM API
+google-generativeai>=0.7.2
+
+# Frontend / UI
+streamlit>=1.35.0
+python-multipart>=0.0.9
+
+# Document loading
+PyMuPDF>=1.24.5
+python-docx>=1.1.2
+
+# Utilities
+numpy>=1.26.4
+python-dotenv>=1.0.1
+
+# LangChain ecosystem (used in ingestion.py / rag_pipeline.py)
+langchain>=0.3.0
+langchain-text-splitters>=0.3.0
+langchain-google-genai
+langchain-community
+langchain-core
