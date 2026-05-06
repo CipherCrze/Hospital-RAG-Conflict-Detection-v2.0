@@ -53,8 +53,11 @@
     try {
       await API.setApiKey(key);
       showToast('API key saved successfully', 'success');
-      closeApiKeyModal();
       updateApiStatus(true);
+      
+      // Keep settings input in sync if it exists
+      const settingsInput = document.getElementById('settings-api-key');
+      if (settingsInput) settingsInput.value = key;
     } catch (e) { showToast(e.message, 'error'); }
   };
 
