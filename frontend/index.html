@@ -1383,12 +1383,14 @@
       return '<span class="status-badge review">NEEDS REVIEW</span>';
     }
 
+    var API_BASE = (window.location.protocol === 'file:' || window.location.hostname === 'localhost') ? 'http://localhost:8080' : '';
+
     function saveApiKey() {
       var input = document.getElementById('api-key-input');
       var key = input.value.trim();
       if (!key) return;
 
-      fetch('/api/set-api-key', {
+      fetch(API_BASE + '/api/set-api-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_key: key })
@@ -1417,7 +1419,7 @@
       var apiKey = '';
       try { apiKey = document.getElementById('api-key-input').value || ''; } catch (e) { }
 
-      fetch('/api/query', {
+      fetch(API_BASE + '/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: text, api_key: apiKey || undefined, profile: activeProfile })
@@ -1483,7 +1485,7 @@
       status.textContent = 'Uploading ' + names.length + ' file(s)...';
       var form = new FormData();
       Array.from(input.files).forEach(function (f) { form.append('files', f); });
-      fetch('/api/documents/upload', { method: 'POST', body: form })
+      fetch(API_BASE + '/api/documents/upload', { method: 'POST', body: form })
         .then(function (r) { return r.ok ? r.json() : r.json().then(function (e) { throw new Error(e.detail || 'Upload failed'); }); })
         .then(function (data) {
           status.textContent = data.message || 'Upload complete.';
@@ -1506,7 +1508,7 @@
     }
 
     function loadDocuments() {
-      fetch('/api/documents')
+      fetch(API_BASE + '/api/documents')
         .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
         .then(function (data) {
           var docs = data.documents || [];
