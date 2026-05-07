@@ -1383,6 +1383,27 @@
       return '<span class="status-badge review">NEEDS REVIEW</span>';
     }
 
+    function saveApiKey() {
+      var input = document.getElementById('api-key-input');
+      var key = input.value.trim();
+      if (!key) return;
+
+      fetch('/api/set-api-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: key })
+      }).then(function(r) {
+        if (r.ok) {
+          console.log('API Key saved to backend');
+          // Update settings input if it exists
+          var settingsInput = document.getElementById('settings-api-key');
+          if (settingsInput) settingsInput.value = key;
+        }
+      }).catch(function(err) {
+        console.error('Failed to save API key:', err);
+      });
+    }
+
     function runQuery() {
       var input = document.getElementById('query-input');
       var text = input.value.trim();
@@ -1394,35 +1415,39 @@
       ansBox.innerHTML = '<div class="answer-box"><span class="spinner"></span> Querying documents as <strong>' + esc(activeProfileName) + '</strong>...</div>';
 
       var apiKey = '';
-      try { apiKey = document.querySelector('.api-input').value || ''; } catch (e) { }
+      try { apiKey = document.getElementById('api-key-input').value || ''; } catch (e) { }
 
       fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: text, api_key: apiKey || undefined, profile: activeProfile })
-      }).then(function (r) { return r.ok ? r.json() : r.json().then(function (e) { throw new Error(e.detail || 'Query failed'); }); })
+      }).then(function (r) { 
+        if (!r.ok) {
+           return r.json().then(function (e) { throw new Error(e.detail || 'Query failed'); });
+        }
+        return r.json();
+      })
         .then(function (data) {
           qCount++;
           var conf = data.confidence ? data.confidence.score : Math.floor(75 + Math.random() * 20);
           var hasCon = data.conflicts && data.conflicts.conflict_count > 0;
           if (hasCon) totalConflicts += data.conflicts.conflict_count;
-          queries.unshift({ text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), conf: conf, profile: activeProfile, hasCon: hasCon, elapsed: data.elapsed || '1.8' });
+          queries.unshift({ text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), conf: conf, profile: activeProfile, hasCon: hasCon, elapsed: data.elapsed_seconds || '1.8' });
           input.value = '';
           document.getElementById('stat-queries').textContent = qCount;
           document.getElementById('stat-conf').textContent = Math.round(conf) + '%';
           renderAnswer(data, activeProfile);
           renderHistory();
         }).catch(function (err) {
+          console.error('Query Error:', err);
           qCount++;
           var conf = Math.floor(75 + Math.random() * 20);
           var hasCon = Math.random() > 0.5;
           if (hasCon) totalConflicts++;
           queries.unshift({ text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), conf: conf, profile: activeProfile, hasCon: hasCon, elapsed: (1 + Math.random() * 2).toFixed(1) });
-          input.value = '';
-          document.getElementById('stat-queries').textContent = qCount;
-          document.getElementById('stat-conf').textContent = conf + '%';
+          
           var demoData = {
-            answer: 'Backend offline \u2014 showing demo response for ' + activeProfileName + ' profile.\n\nBased on the indexed hospital documents, here is a simulated analysis tailored to your role as ' + activeProfileName + '. In production, this would contain RAG-retrieved evidence with conflict detection.',
+            answer: 'Backend connection failed \u2014 showing demo response for ' + activeProfileName + ' profile.\n\nError: ' + err.message + '\n\nMake sure the backend is running (python app.py) and you are accessing the app at http://localhost:8080.',
             conflicts: hasCon ? { conflict_count: 1, conflicts: [{ doc_a: { source: 'Q1_Financial_Summary.txt' }, doc_b: { source: 'Q1_Budget_Variance_Report.txt' }, contradiction_score: 0.72 }] } : { conflict_count: 0, conflicts: [] },
             sources: [{ source: 'Q1_Financial_Summary.txt', department: 'Finance' }, { source: 'Nursing_Staff_Report_Q1.txt', department: 'Nursing' }],
             confidence: { score: conf, level: conf >= 70 ? 'High' : conf >= 40 ? 'Medium' : 'Low' }
